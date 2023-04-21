@@ -5,6 +5,7 @@ import csv
 import argparse
 from datetime import datetime
 import calendar
+import sys
 
 title = "\nADExplorerDump.py v0.1\n"
 
@@ -30,20 +31,28 @@ def long_standing_accounts(data, max_password_age):
 
 def output_data(outputs, args):
     if args.format == "txt":
-        print_outputs(outputs)
+        print_outputs(outputs, args.outfile)
     elif args.format == "csv":
         csv_output(outputs, args.outfile)
 
-def print_outputs(outputs):
+def print_outputs(outputs, filename):
+    if filename == "-":
+        f = sys.stdout
+    else:
+        f = open(filename, "w")
+
     if "longstanding" in outputs:
         max_width = max([len(x[0]) for x in outputs["longstanding"]])
         table_width = max_width + 27
-        print("-"*table_width)
-        print("| {:<{max_width}} | {:<20} |".format("User", "Password Last Set", max_width=max_width))
-        print("-"*table_width)
+        print("-"*table_width, file=f)
+        print("| {:<{max_width}} | {:<20} |".format("User", "Password Last Set", max_width=max_width), file=f)
+        print("-"*table_width, file=f)
         for line in outputs["longstanding"]:
-            print("| {:<{max_width}} | {:<20} |".format(*line, max_width=max_width))
-            print("-"*table_width)
+            print("| {:<{max_width}} | {:<20} |".format(*line, max_width=max_width), file=f)
+            print("-"*table_width, file=f)
+
+    if not filename == "-":
+        f.close()
 
 def csv_output(outputs, filename):
     with open(filename,"w", newline="") as f:
