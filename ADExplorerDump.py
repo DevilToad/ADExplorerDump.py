@@ -29,6 +29,17 @@ def long_standing_accounts(data, max_password_age):
 
     return accounts
 
+def description_search(data, search_text):
+    objects = []
+
+    for object in data['data']:
+        if "description" in object["Properties"]:
+            if object["Properties"]["description"]:
+                if search_text in object["Properties"]["description"]:
+                    objects.append([object["Properties"]["name"], object["Properties"]["description"]])
+
+    return objects
+
 def output_data(outputs, args):
     if args.format == "txt":
         print_outputs(outputs, args.outfile)
@@ -42,14 +53,21 @@ def print_outputs(outputs, filename):
         f = open(filename, "w")
 
     if "longstanding" in outputs:
-        max_width = max([len(x[0]) for x in outputs["longstanding"]])
-        table_width = max_width + 27
+        action = "longstanding"
+        headers = ["User", "Password Last Set"]
+    elif "description" in outputs:
+        action = "description"
+        headers = ["Object", "Desription"]
+
+    max_width_col_1 = max([len(x[0]) for x in outputs[action]])
+    max_width_col_2 = max([len(x[1]) for x in outputs[action]])
+    table_width = max_width_col_1 + max_width_col_2 + 7
+    print("-"*table_width, file=f)
+    print("| {:<{col1}} | {:<{col2}} |".format(*headers, col1=max_width_col_1, col2=max_width_col_2), file=f)
+    print("-"*table_width, file=f)
+    for line in outputs[action]:
+        print("| {:<{col1}} | {:<{col2}} |".format(*line, col1=max_width_col_1, col2=max_width_col_2), file=f)
         print("-"*table_width, file=f)
-        print("| {:<{max_width}} | {:<20} |".format("User", "Password Last Set", max_width=max_width), file=f)
-        print("-"*table_width, file=f)
-        for line in outputs["longstanding"]:
-            print("| {:<{max_width}} | {:<20} |".format(*line, max_width=max_width), file=f)
-            print("-"*table_width, file=f)
 
     if not filename == "-":
         f.close()
@@ -59,6 +77,9 @@ def csv_output(outputs, filename):
         if "longstanding" in outputs:
             header_row = ["User","Password Last Set"]
             rows = outputs["longstanding"]
+        elif "description" in outputs:
+            header_row = ["Object", "Description"]
+            rows = outputs["description"]
         
         writer = csv.writer(f)
         writer.writerow(header_row)
@@ -94,5 +115,8 @@ if __name__ == "__main__":
     if args.long_standing_accounts:
         print("[+] Checking for long standing accounts without recent password changes...\n")
         outputs["longstanding"] = long_standing_accounts(data, args.max_password_age)
+    elif args.description:
+        print("[+] Searching for {} in object descriptions...\n".format(args.description))
+        outputs["description"] = description_search(data, args.description)
 
     output_data(outputs,args)
