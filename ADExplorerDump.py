@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 import json
+import csv
 import argparse
 from datetime import datetime
 import calendar
@@ -28,11 +29,10 @@ def long_standing_accounts(data, max_password_age):
     return accounts
 
 def output_data(outputs, args):
-
     if args.format == "txt":
         print_outputs(outputs)
     elif args.format == "csv":
-        csv_output(outputs)
+        csv_output(outputs, args.outfile)
 
 def print_outputs(outputs):
     if "longstanding" in outputs:
@@ -44,6 +44,17 @@ def print_outputs(outputs):
         for line in outputs["longstanding"]:
             print("| {:<{max_width}} | {:<20} |".format(*line, max_width=max_width))
             print("-"*table_width)
+
+def csv_output(outputs, filename):
+    with open(filename,"w", newline="") as f:
+        if "longstanding" in outputs:
+            header_row = ["User","Password Last Set"]
+            rows = outputs["longstanding"]
+        
+        writer = csv.writer(f)
+        writer.writerow(header_row)
+        writer.writerows(rows)
+
 
 def get_args():
     parser = argparse.ArgumentParser(
